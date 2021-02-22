@@ -3,12 +3,12 @@ package backuper
 import (
 	"encoding/base64"
 	"fmt"
-	"log"
+	"io"
 	"net"
-	"os"
 
 	scp "github.com/bramvdbogaerde/go-scp"
 	"github.com/bramvdbogaerde/go-scp/auth"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -25,20 +25,18 @@ type SCPUtil struct {
 }
 
 // Copy copies a local file to remote server
-func (s *SCPUtil) Copy(src, dst string) error {
+// We need a know size since we don't want to
+// read all data to memory. To find more see client.Copy
+func (s *SCPUtil) Copy(src io.Reader, dst string, size int64) error {
 	clientConfig, _ := auth.PrivateKey(s.Username, s.PrivateKey, trustedHostKeyCallback(""))
 	client := scp.NewClient(s.Remote, &clientConfig)
 	err := client.Connect()
 	if err != nil {
 		return err
 	}
-
-	f, _ := os.Open(src)
-
 	defer client.Close()
-	defer f.Close()
 
-	err = client.CopyFile(f, dst, "0655")
+	err = client.Copy(src, dst, "0655", size)
 
 	if err != nil {
 		return err
@@ -55,7 +53,9 @@ func trustedHostKeyCallback(trustedKey string) ssh.HostKeyCallback {
 
 	if trustedKey == "" {
 		return func(_ string, _ net.Addr, k ssh.PublicKey) error {
-			log.Printf("WARNING: SSH-key verification is *NOT* in effect: to fix, add this trustedKey: %q", keyString(k))
+			log.WithFields(log.Fields{
+				"trustedKey": keyString(k),
+			}).Warn("SSH-key verification is *NOT* in effect: to fix, add this trustedKey: %q")
 			return nil
 		}
 	}
@@ -63,7 +63,12 @@ func trustedHostKeyCallback(trustedKey string) ssh.HostKeyCallback {
 	return func(_ string, _ net.Addr, k ssh.PublicKey) error {
 		ks := keyString(k)
 		if trustedKey != ks {
-			return fmt.Errorf("SSH-key verification: expected %q but got %q", trustedKey, ks)
+			err := fmt.Errorf("SSH-key verification: expected %q but got %q", trustedKey, ks)
+			log.WithFields(log.Fields{
+				"expected": trustedKey,
+				"got":      ks,
+			}).Error("SSH-key verification error")
+			return err
 		}
 
 		return nil

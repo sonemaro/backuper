@@ -13,5 +13,8 @@
         "key": "/path/to/private/key",
         "insecure": false
     },
-    "backup": "/path/to/backup/dir/"
+    "app": {
+        "home": "/path/to/home",
+        "name": ".backuper"
+    }
 }

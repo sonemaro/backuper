@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/JamesStewy/go-mysqldump"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 // DBDump is responsible for dumping database

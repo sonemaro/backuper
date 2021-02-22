@@ -29,8 +29,10 @@ func TestZipDirectory(t *testing.T) {
 		}
 		f.Close()
 	}
+	// fmt.Println(n)
+	// os.Exit(1)
 
-	p := "/tmp/test_dist_zip.zip"
+	p := "/tmp/test_dist.zip"
 	arc := Archiver{}
 	err = arc.ZipDirectory(n, p)
 	if err != nil {
