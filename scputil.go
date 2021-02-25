@@ -5,10 +5,14 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"time"
 
-	scp "github.com/bramvdbogaerde/go-scp"
+	// scp "github.com/bramvdbogaerde/go-scp"
 	"github.com/bramvdbogaerde/go-scp/auth"
 	log "github.com/sirupsen/logrus"
+
+	// #TODO use the original library if they merge my commit
+	scp "github.com/sonemaro/go-scp"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -22,15 +26,23 @@ type SCPUtil struct {
 
 	// Username of remote server
 	Username string
+
+	// SSH timeout
+	Timeout time.Duration
 }
 
 // Copy copies a local file to remote server
 // We need a know size since we don't want to
 // read all data to memory. To find more see client.Copy
+// NOTE: THIS METHOD DOES NOT CREATE FOLDER IF IT DOES NOT EXIST IN REMOTE
 func (s *SCPUtil) Copy(src io.Reader, dst string, size int64) error {
-	clientConfig, _ := auth.PrivateKey(s.Username, s.PrivateKey, trustedHostKeyCallback(""))
+	clientConfig, err := auth.PrivateKey(s.Username, s.PrivateKey, trustedHostKeyCallback(""))
+	if err != nil {
+		return err
+	}
+	clientConfig.Timeout = s.Timeout
 	client := scp.NewClient(s.Remote, &clientConfig)
-	err := client.Connect()
+	err = client.Connect()
 	if err != nil {
 		return err
 	}

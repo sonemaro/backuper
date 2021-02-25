@@ -11,6 +11,8 @@
         "remote": "hostname:port",
         "username": "root",
         "key": "/path/to/private/key",
+        "destination": "/path/to/remote/destination",
+        "timeout": 120,
         "insecure": false
     },
     "app": {
