@@ -35,8 +35,8 @@ type SCPUtil struct {
 // We need a know size since we don't want to
 // read all data to memory. To find more see client.Copy
 // NOTE: THIS METHOD DOES NOT CREATE FOLDER IF IT DOES NOT EXIST IN REMOTE
-func (s *SCPUtil) Copy(src io.Reader, dst string, size int64) error {
-	clientConfig, err := auth.PrivateKey(s.Username, s.PrivateKey, trustedHostKeyCallback(""))
+func (s *SCPUtil) Copy(src io.Reader, dst string, size int64, trustedHostKey string) error {
+	clientConfig, err := auth.PrivateKey(s.Username, s.PrivateKey, trustedHostKeyCallback(trustedHostKey))
 	if err != nil {
 		return err
 	}

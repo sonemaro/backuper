@@ -37,20 +37,21 @@ var (
 
 // Config holds our config data
 type Config struct {
-	SitePath       string
-	DBUsername     string
-	DBPassword     string
-	DBHostname     string
-	DBName         string
-	DBPort         int
-	SSHUsername    string
-	SSHKeyPath     string
-	SSHRemote      string
-	SSHTimeout     time.Duration
-	SSHDestination string
-	SSHInsecure    bool
-	AppName        string
-	AppHome        string
+	SitePath          string
+	DBUsername        string
+	DBPassword        string
+	DBHostname        string
+	DBName            string
+	DBPort            int
+	SSHUsername       string
+	SSHKeyPath        string
+	SSHRemote         string
+	SSHTimeout        time.Duration
+	SSHDestination    string
+	SSHTrustedHostKey string
+	SSHInsecure       bool
+	AppName           string
+	AppHome           string
 }
 
 // Setup is responsible for setting up everything
@@ -76,22 +77,31 @@ func (s *Setup) getSubFolder(fld string) string {
 
 // Backup starts the backup process.
 func (s *Setup) Backup() error {
-	arc := backuper.Archiver{
-		// IOCopyProxy: backuper.IOCopyProgress,
-	}
+	arc := backuper.NewArchiver()
 
 	// generate a time base name for our site backup
 	// example: $HOME/.backuper/tmp/site_0210221T175418.zip
 	siteBackup := path.Join(s.getSubFolder(TMP), generateTimeName("site_", "zip"))
 
+	filesCount, err := backuper.DirFileCount(s.Config.SitePath)
+	if err != nil {
+		return err
+	}
+
+	zipBar := pb.Start64(int64(filesCount))
+	arc.AfterCopyCallback = func(path string, info os.FileInfo) {
+		zipBar.Add(1)
+	}
+	log.Info("creating site backup")
 	// create a zipfile containing all website files to our tmp folder
-	err := arc.ZipDirectory(s.Config.SitePath, siteBackup)
+	err = arc.ZipDirectory(s.Config.SitePath, siteBackup)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Error("cannot create backup from website")
 		return err
 	}
+	zipBar.Finish()
 
 	log.WithFields(log.Fields{
 		"backupName": siteBackup,
@@ -179,7 +189,7 @@ func (s *Setup) Backup() error {
 		remoteDst = path.Join(s.Config.SSHDestination, fi.Name())
 	}
 
-	err = scpu.Copy(barReader, remoteDst, st.Size())
+	err = scpu.Copy(barReader, remoteDst, st.Size(), s.Config.SSHTrustedHostKey)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
@@ -323,20 +333,21 @@ func (s *Setup) initConfig() {
 	}
 
 	s.Config = Config{
-		SitePath:       viper.GetString("site"),
-		DBUsername:     viper.GetString("db.username"),
-		DBPassword:     viper.GetString("db.password"),
-		DBHostname:     viper.GetString("db.hostname"),
-		DBName:         viper.GetString("db.dbname"),
-		DBPort:         viper.GetInt("db.port"),
-		SSHUsername:    viper.GetString("ssh.username"),
-		SSHKeyPath:     viper.GetString("ssh.key"),
-		SSHRemote:      viper.GetString("ssh.remote"),
-		SSHTimeout:     viper.GetDuration("ssh.timeout") * time.Second,
-		SSHInsecure:    viper.GetBool("ssh.insecure"),
-		SSHDestination: viper.GetString("ssh.destination"),
-		AppHome:        viper.GetString("app.home"),
-		AppName:        viper.GetString("app.name"),
+		SitePath:          viper.GetString("site"),
+		DBUsername:        viper.GetString("db.username"),
+		DBPassword:        viper.GetString("db.password"),
+		DBHostname:        viper.GetString("db.hostname"),
+		DBName:            viper.GetString("db.dbname"),
+		DBPort:            viper.GetInt("db.port"),
+		SSHUsername:       viper.GetString("ssh.username"),
+		SSHKeyPath:        viper.GetString("ssh.key"),
+		SSHRemote:         viper.GetString("ssh.remote"),
+		SSHTimeout:        viper.GetDuration("ssh.timeout") * time.Second,
+		SSHInsecure:       viper.GetBool("ssh.insecure"),
+		SSHDestination:    viper.GetString("ssh.destination"),
+		SSHTrustedHostKey: viper.GetString("ssh.trustedHostKey"),
+		AppHome:           viper.GetString("app.home"),
+		AppName:           viper.GetString("app.name"),
 	}
 }
 

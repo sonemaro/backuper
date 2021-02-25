@@ -11,10 +11,11 @@ require (
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/sirupsen/logrus v1.8.0
-	github.com/sonemaro/go-scp v0.0.0-20201229172121-7a6c0268fa67
+	github.com/sonemaro/go-scp v0.0.0-20210225025636-4928e4ccf784
 	github.com/spf13/afero v1.5.1
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/viper v1.7.1
 	github.com/ziutek/mymysql v1.5.4 // indirect
-	golang.org/x/crypto v0.0.0-20210218145215-b8e89b74b9df
+	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
+	golang.org/x/sys v0.0.0-20210225014209-683adc9d29d7 // indirect
 )

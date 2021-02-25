@@ -10,9 +10,15 @@ import (
 // The Archiver provides a set of utility functions in order
 // to create archives from files and directories
 type Archiver struct {
-	// IOCopyProxy is a func which will be called
-	// before any walk callback
-	IOCopyProxy func(r io.Reader, w io.Writer, limit int64) error
+	// BeforeCopyCallback will be called before each io.Copy
+	// in walker. The purpose is to implement progress bar or
+	// any other calculation outside of this package
+	BeforeCopyCallback func(path string, info os.FileInfo)
+
+	// AfterCopyCallback will be called after each SUCCESSFUL io.Copy
+	// in walker. The purpose is to implement progress bar or
+	// any other calculation outside of this package
+	AfterCopyCallback func(path string, info os.FileInfo)
 }
 
 // NewArchiver returns a fresh instance of Archiver
@@ -20,10 +26,8 @@ type Archiver struct {
 // runs a normal io.Copy without anything special.
 func NewArchiver() *Archiver {
 	return &Archiver{
-		IOCopyProxy: func(r io.Reader, w io.Writer, limit int64) error {
-			_, err := io.Copy(w, r)
-			return err
-		},
+		BeforeCopyCallback: func(path string, info os.FileInfo) {},
+		AfterCopyCallback:  func(path string, info os.FileInfo) {},
 	}
 }
 
@@ -58,11 +62,13 @@ func (a *Archiver) ZipDirectory(src, dest string) error {
 			return err
 		}
 
+		a.BeforeCopyCallback(path, info)
 		_, err = io.Copy(f, fl)
 
 		if err != nil {
 			return err
 		}
+		a.AfterCopyCallback(path, info)
 
 		return nil
 	}
