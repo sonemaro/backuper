@@ -15,8 +15,5 @@
         "timeout": 120,
         "insecure": false
     },
-    "app": {
-        "home": "/path/to/home",
-        "name": ".backuper"
-    }
+    "appName": ".backuper"
 }
